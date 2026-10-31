@@ -32,6 +32,7 @@ input:focus,select:focus{outline:2px solid var(--ac);border-color:transparent}
 .go{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:0;font-weight:700;cursor:pointer}
 .go:active{transform:scale(.97)}
 .ghost{background:transparent;color:var(--mu);cursor:pointer}
+a.ghost{display:inline-block;padding:9px;border:1px solid var(--bd);border-radius:10px;text-decoration:none}
 .chart{position:relative;height:270px}
 .list{max-height:380px;overflow-y:auto}
 .row{display:flex;gap:10px;align-items:center;padding:9px 6px;border-bottom:1px solid var(--bd);border-radius:8px;animation:in .3s}
@@ -92,7 +93,7 @@ input:focus,select:focus{outline:2px solid var(--ac);border-color:transparent}
 
 <div class="card">
   <div class="head"><h2>History</h2>
-    <div><button class="ghost" id="sample" type="button">Try sample data</button> <button class="ghost" id="clear" type="button">Clear all</button></div>
+    <div><a class="ghost" href="history.html">Full history</a> <button class="ghost" id="sample" type="button">Try sample data</button> <button class="ghost" id="clear" type="button">Clear all</button></div>
   </div>
   <div class="list" id="list"></div>
 </div>
