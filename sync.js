@@ -17,17 +17,17 @@
 
   async function connect(password, localEntries, applyRemote, status) {
     if (!password) throw new Error('Enter your sync password first.');
-    status('Connecting to GitHub…');
+    status('Connecting to Supabase…');
     const result = await request(password, 'GET');
     sessionStorage.setItem(passwordKey, password);
     if (result.entries.length) {
       applyRemote(result.entries);
-      status('Loaded the GitHub history.');
+      status('Loaded the Supabase history.');
     } else if (localEntries.length) {
       await request(password, 'PUT', localEntries);
-      status('Uploaded this browser’s history to GitHub.');
+      status('Uploaded this browser’s history to Supabase.');
     } else {
-      status('Connected. Your history will be saved to GitHub.');
+      status('Connected. Your history will be saved to Supabase.');
     }
   }
 
@@ -36,9 +36,9 @@
     if (!password) return;
     try {
       await request(password, 'PUT', entries);
-      status('Saved to GitHub.');
+      status('Saved to Supabase.');
     } catch (error) {
-      status(`GitHub sync failed; your browser copy is kept. ${error.message}`);
+      status(`Supabase sync failed; your browser copy is kept. ${error.message}`);
     }
   }
 

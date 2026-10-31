@@ -1,8 +1,5 @@
 const { timingSafeEqual } = require('node:crypto');
 
-const githubApi = 'https://api.github.com';
-const defaultPath = 'data/balance-history.json';
-
 function respond(res, status, body) {
   res.setHeader('Cache-Control', 'no-store');
   res.status(status).json(body);
@@ -19,37 +16,35 @@ function isAuthorized(req) {
 }
 
 function configuration() {
-  const { GITHUB_TOKEN: token, GITHUB_OWNER: owner, GITHUB_REPO: repo } = process.env;
-  if (!token || !owner || !repo || !process.env.SYNC_PASSWORD) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key || !process.env.SYNC_PASSWORD) {
     throw new Error('Vercel environment variables are not configured.');
   }
-  return {
-    token,
-    owner,
-    repo,
-    path: process.env.GITHUB_FILE_PATH || defaultPath,
-    branch: process.env.GITHUB_BRANCH || 'main',
-  };
+  return { url: url.replace(/\/+$/, ''), key };
 }
 
-async function githubRequest(config, method, path, body) {
-  const fileUrl = `${githubApi}/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
-  const url = method === 'GET' ? `${fileUrl}?ref=${encodeURIComponent(config.branch)}` : fileUrl;
+async function supabaseRequest(config, method, body) {
+  const query = method === 'GET' ? '?id=eq.1&select=entries' : '?on_conflict=id';
+  const url = `${config.url}/rest/v1/balance_history${query}`;
   const response = await fetch(url, {
     method,
     headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${config.token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      apikey: config.key,
+      Authorization: `Bearer ${config.key}`,
+      Accept: 'application/json',
+      ...(body ? {
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!response.ok) {
-    if (response.status === 404 && method === 'GET') return null;
-    throw new Error(`GitHub API request failed with status ${response.status}.`);
+    const detail = await response.text();
+    throw new Error(`Supabase request failed with status ${response.status}${detail ? `: ${detail}` : ''}`);
   }
-  return response.json();
+  return method === 'GET' ? response.json() : null;
 }
 
 function validEntries(entries) {
@@ -64,29 +59,6 @@ function validEntries(entries) {
   );
 }
 
-async function readHistory(config) {
-  const file = await githubRequest(config, 'GET', config.path);
-  if (!file) return [];
-  try {
-    const parsed = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
-    if (!parsed || !validEntries(parsed.entries)) throw new Error('Invalid history file format.');
-    return parsed.entries;
-  } catch (error) {
-    throw new Error(`Could not read the GitHub history file: ${error.message}`);
-  }
-}
-
-async function writeHistory(config, entries) {
-  const file = await githubRequest(config, 'GET', config.path);
-  const contents = Buffer.from(`${JSON.stringify({ entries }, null, 2)}\n`, 'utf8').toString('base64');
-  await githubRequest(config, 'PUT', config.path, {
-    message: 'Update balance history',
-    content: contents,
-    ...(file ? { sha: file.sha } : {}),
-    branch: config.branch,
-  });
-}
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'PUT') {
     res.setHeader('Allow', 'GET, PUT');
@@ -97,12 +69,16 @@ module.exports = async function handler(req, res) {
   try {
     const config = configuration();
     if (req.method === 'GET') {
-      return respond(res, 200, { entries: await readHistory(config) });
+      const rows = await supabaseRequest(config, 'GET');
+      if (!Array.isArray(rows) || (rows.length && !validEntries(rows[0].entries))) {
+        throw new Error('Supabase returned an invalid balance history.');
+      }
+      return respond(res, 200, { entries: rows.length ? rows[0].entries : [] });
     }
     if (!req.body || !validEntries(req.body.entries)) {
       return respond(res, 400, { error: 'Invalid balance history.' });
     }
-    await writeHistory(config, req.body.entries);
+    await supabaseRequest(config, 'POST', { id: 1, entries: req.body.entries, updated_at: new Date().toISOString() });
     return respond(res, 200, { ok: true });
   } catch (error) {
     console.error('Balance history sync failed:', error);
