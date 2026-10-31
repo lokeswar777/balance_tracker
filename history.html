@@ -12,8 +12,10 @@
     main{max-width:1000px;margin:0 auto;padding:14px}
     .head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
     h1{font-size:26px;margin:0}
-    .actions{display:flex;gap:8px;align-items:center}
-    a,button{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);text-decoration:none;cursor:pointer}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    a,button,input{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);text-decoration:none}
+    input{width:160px;min-width:0}
+    button{cursor:pointer}
     button.primary{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700}
     button:disabled{opacity:.5;cursor:not-allowed}
     .summary,.table-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
@@ -37,13 +39,15 @@
       <h1>Balance history</h1>
       <div class="actions">
         <a href="index.html">Back to dashboard</a>
+        <input id="syncPassword" type="password" placeholder="Sync password" aria-label="GitHub sync password" autocomplete="current-password">
+        <button id="sync" type="button">Sync GitHub</button>
         <button class="primary" id="export" type="button">Download CSV</button>
       </div>
     </header>
     <section class="summary" aria-live="polite">
       <small>Current balance</small>
       <strong id="balance">₹0</strong>
-      <p class="status" id="status"></p>
+      <p class="status" id="status" aria-live="polite"></p>
     </section>
     <section class="table-wrap">
       <table>
@@ -53,6 +57,7 @@
       <div class="empty" id="empty" hidden>No balance entries yet. Add one from the dashboard.</div>
     </section>
   </main>
+  <script src="sync.js"></script>
   <script>
     const $=id=>document.getElementById(id);
     const format=new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2});
@@ -74,6 +79,18 @@
         $('empty').hidden=false;
       }
     }
+
+    $('syncPassword').value=BalanceSync.savedPassword();
+    $('sync').addEventListener('click',async()=>{
+      try{
+        await BalanceSync.connect($('syncPassword').value||BalanceSync.savedPassword(),entries,remote=>{
+          localStorage.setItem('mt2',JSON.stringify({h:remote}));
+          loadHistory();
+          if(BalanceSync.savedPassword())$('sync').click();
+        },message=>{$('status').textContent=message});
+        $('syncPassword').value=BalanceSync.savedPassword();
+      }catch(error){$('status').textContent=error.message}
+    });
 
     function render(){
       const body=$('entries');

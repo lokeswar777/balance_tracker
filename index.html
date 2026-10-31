@@ -33,6 +33,9 @@ input:focus,select:focus{outline:2px solid var(--ac);border-color:transparent}
 .go:active{transform:scale(.97)}
 .ghost{background:transparent;color:var(--mu);cursor:pointer}
 a.ghost{display:inline-block;padding:9px;border:1px solid var(--bd);border-radius:10px;text-decoration:none}
+.sync{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sync input{width:160px;padding:7px}
+.sync-status{margin:6px 0 0;color:var(--mu);font-size:12px}
 .chart{position:relative;height:270px}
 .list{max-height:380px;overflow-y:auto}
 .row{display:flex;gap:10px;align-items:center;padding:9px 6px;border-bottom:1px solid var(--bd);border-radius:8px;animation:in .3s}
@@ -93,14 +96,22 @@ a.ghost{display:inline-block;padding:9px;border:1px solid var(--bd);border-radiu
 
 <div class="card">
   <div class="head"><h2>History</h2>
-    <div><a class="ghost" href="history.html">Full history</a> <button class="ghost" id="sample" type="button">Try sample data</button> <button class="ghost" id="clear" type="button">Clear all</button></div>
+    <div class="sync">
+      <a class="ghost" href="history.html">Full history</a>
+      <input id="syncPassword" type="password" placeholder="Sync password" aria-label="GitHub sync password" autocomplete="current-password">
+      <button class="ghost" id="sync" type="button">Sync GitHub</button>
+      <button class="ghost" id="sample" type="button">Try sample data</button>
+      <button class="ghost" id="clear" type="button">Clear all</button>
+    </div>
   </div>
+  <p class="sync-status" id="syncStatus" aria-live="polite">History is stored in this browser until you connect GitHub sync.</p>
   <div class="list" id="list"></div>
 </div>
 </main>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="sync.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const F=new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2});
@@ -109,7 +120,8 @@ const sgn=n=>(n>=0?'+':'−')+inr(Math.abs(n));
 const pct=(a,b)=>b?((a-b)/Math.abs(b)*100):0;
 let S={h:[]},R=0;
 try{const r=localStorage.getItem('mt2');if(r)S=JSON.parse(r)}catch(e){}
-const save=()=>{try{localStorage.setItem('mt2',JSON.stringify(S))}catch(e){}};
+const save=(sync=true)=>{try{localStorage.setItem('mt2',JSON.stringify(S))}catch(e){toast('Could not save history in this browser');return}
+  if(sync)void BalanceSync.save(S.h,m=>$('syncStatus').textContent=m)};
 const ym=d=>d.slice(0,7);
 const sorted=()=>[...S.h].sort((a,b)=>a.d.localeCompare(b.d)||a.id-b.id);
 const mlabel=k=>new Date(k+'-01T00:00:00').toLocaleDateString('en-IN',{month:'short',year:'numeric'});
@@ -187,6 +199,11 @@ function render(){
 
 $('f').addEventListener('submit',e=>{e.preventDefault();const b=parseFloat($('b').value);if(isNaN(b))return;
   S.h.push({id:Date.now(),d:$('date').value,b,n:$('n').value.trim()});$('b').value='';$('n').value='';save();render();toast('Balance added')});
+$('syncPassword').value=BalanceSync.savedPassword();
+$('sync').addEventListener('click',async()=>{try{
+  await BalanceSync.connect($('syncPassword').value||BalanceSync.savedPassword(),S.h,entries=>{S={h:entries};save(false);render()},m=>$('syncStatus').textContent=m);
+  $('syncPassword').value=BalanceSync.savedPassword();
+}catch(error){$('syncStatus').textContent=error.message}});
 $('rng').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;R=+b.dataset.r;[...$('rng').children].forEach(x=>x.classList.toggle('on',x===b));render()});
 $('ma').addEventListener('change',()=>compare(monthEnds(sorted())));$('mb').addEventListener('change',()=>compare(monthEnds(sorted())));
 $('sample').addEventListener('click',()=>{if(S.h.length){toast('Clear existing data first');return}
@@ -197,4 +214,5 @@ $('clear').addEventListener('click',()=>{if(!armed){armed=true;$('clear').textCo
   S={h:[]};save();armed=false;$('clear').textContent='Clear all';render()});
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
 render();
+if(BalanceSync.savedPassword())$('sync').click();
 </script></body></html>

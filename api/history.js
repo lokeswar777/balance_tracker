@@ -33,7 +33,9 @@ function configuration() {
 }
 
 async function githubRequest(config, method, path, body) {
-  const response = await fetch(`${githubApi}/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`, {
+  const fileUrl = `${githubApi}/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
+  const url = method === 'GET' ? `${fileUrl}?ref=${encodeURIComponent(config.branch)}` : fileUrl;
+  const response = await fetch(url, {
     method,
     headers: {
       Accept: 'application/vnd.github+json',
