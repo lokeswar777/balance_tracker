@@ -44,7 +44,7 @@ type BalanceEntry = {
   created_at: string;
 };
 
-type DateRange = "7D" | "30D" | "90D" | "6M" | "1Y" | "ALL";
+type DateRange = "3D" | "7D" | "30D" | "90D" | "6M" | "1Y" | "ALL";
 type Notice = { kind: "success" | "error"; message: string };
 type BalanceDraft = { amount: string; note: string; recordedAt: string };
 
@@ -56,6 +56,7 @@ const supabase =
     : null;
 
 const dateRanges: { key: DateRange; label: string }[] = [
+  { key: "3D", label: "3 days" },
   { key: "7D", label: "7 days" },
   { key: "30D", label: "30 days" },
   { key: "90D", label: "90 days" },
@@ -104,7 +105,7 @@ function compareTimestamps(left: string, right: string): number {
 
 function formatAxisDate(value: number, range: DateRange): string {
   const options: Intl.DateTimeFormatOptions =
-    range === "7D" || range === "30D"
+    range === "3D" || range === "7D" || range === "30D"
       ? { day: "numeric", month: "short" }
       : { month: "short", year: "2-digit" };
   return new Intl.DateTimeFormat("en-IN", options).format(new Date(value));
@@ -118,8 +119,8 @@ function toLocalDateTimeValue(value: Date): string {
 function getRangeStart(range: DateRange): number | null {
   const now = new Date();
   if (range === "ALL") return null;
-  if (range === "7D" || range === "30D" || range === "90D") {
-    const days = range === "7D" ? 7 : range === "30D" ? 30 : 90;
+  if (range === "3D" || range === "7D" || range === "30D" || range === "90D") {
+    const days = range === "3D" ? 3 : range === "7D" ? 7 : range === "30D" ? 30 : 90;
     return now.getTime() - days * 24 * 60 * 60 * 1_000;
   }
   now.setMonth(now.getMonth() - (range === "6M" ? 6 : 12));
