@@ -623,3 +623,402 @@ td { height: 48px; padding: 7px 15px; color: var(--text-soft); font-size: 10px; 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+/* =====================================================================
+   GLASS THEME: append to the END of your main CSS file (or import it
+   after your existing CSS). It only overrides colors, surfaces, blur
+   and borders. Layout, spacing and sizes are untouched.
+   ===================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+:root {
+  --page-bg:
+    radial-gradient(60% 50% at 8% 6%, rgba(129, 140, 248, 0.55), transparent 70%),
+    radial-gradient(50% 45% at 92% 14%, rgba(56, 189, 248, 0.42), transparent 70%),
+    radial-gradient(55% 50% at 80% 96%, rgba(244, 114, 182, 0.32), transparent 70%),
+    radial-gradient(45% 40% at 12% 90%, rgba(45, 212, 191, 0.30), transparent 70%),
+    linear-gradient(180deg, #e6eeff 0%, #eef0ff 50%, #e8f1ff 100%);
+
+  --glass-fill: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.30));
+  --glass-fill-soft: rgba(255, 255, 255, 0.34);
+  --glass-field: rgba(255, 255, 255, 0.42);
+  --glass-edge: rgba(255, 255, 255, 0.72);
+  --glass-edge-dim: rgba(255, 255, 255, 0.38);
+  --glass-blur: blur(24px) saturate(165%);
+  --glass-blur-light: blur(12px) saturate(150%);
+  --glass-shadow:
+    0 20px 50px rgba(41, 55, 120, 0.14),
+    0 2px 6px rgba(41, 55, 120, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+
+  --card-bg: var(--glass-fill-soft);
+  --card-subtle: rgba(255, 255, 255, 0.24);
+  --glass-border: var(--glass-edge);
+  --shadow-card: var(--glass-shadow);
+
+  --text-muted: #7a839a;
+  --border: rgba(120, 135, 190, 0.20);
+  --chart-grid: rgba(120, 135, 190, 0.20);
+  --chart-cursor: rgba(106, 125, 236, 0.55);
+}
+
+:root[data-theme="dark"] {
+  --page-bg:
+    radial-gradient(60% 50% at 8% 6%, rgba(99, 102, 241, 0.42), transparent 70%),
+    radial-gradient(50% 45% at 92% 14%, rgba(14, 165, 233, 0.26), transparent 70%),
+    radial-gradient(55% 50% at 80% 96%, rgba(168, 85, 247, 0.28), transparent 70%),
+    radial-gradient(45% 40% at 12% 90%, rgba(20, 184, 166, 0.22), transparent 70%),
+    linear-gradient(180deg, #080d1a 0%, #0c1224 50%, #080d1a 100%);
+
+  --glass-fill: linear-gradient(145deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03));
+  --glass-fill-soft: rgba(255, 255, 255, 0.06);
+  --glass-field: rgba(255, 255, 255, 0.06);
+  --glass-edge: rgba(255, 255, 255, 0.16);
+  --glass-edge-dim: rgba(255, 255, 255, 0.09);
+  --glass-shadow:
+    0 24px 56px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+
+  --card-bg: var(--glass-fill-soft);
+  --card-subtle: rgba(255, 255, 255, 0.05);
+  --text-muted: #8f98ae;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --chart-grid: rgba(255, 255, 255, 0.09);
+  --chart-cursor: rgba(155, 171, 255, 0.5);
+}
+
+/* ---------- 2. Background: fixed, with soft drifting light blobs ---------- */
+body {
+  background: var(--page-bg);
+  background-attachment: fixed;
+}
+
+/* sheen layer (was already in your CSS; softened) */
+body::before {
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.18), transparent 40%, rgba(147, 168, 255, 0.08));
+}
+:root[data-theme="dark"] body::before {
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.03), transparent 45%, rgba(147, 168, 255, 0.04));
+}
+
+/* two blurred orbs sitting behind everything so the glass has something to refract */
+body::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: -10%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 260px at 22% 30%, rgba(139, 92, 246, 0.30), transparent 70%),
+    radial-gradient(circle 300px at 78% 68%, rgba(34, 211, 238, 0.28), transparent 70%);
+  filter: blur(30px);
+  animation: glass-drift 28s ease-in-out infinite alternate;
+}
+:root[data-theme="dark"] body::after {
+  background:
+    radial-gradient(circle 260px at 22% 30%, rgba(139, 92, 246, 0.26), transparent 70%),
+    radial-gradient(circle 300px at 78% 68%, rgba(34, 211, 238, 0.20), transparent 70%);
+}
+@keyframes glass-drift {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to   { transform: translate3d(3%, 2%, 0) scale(1.08); }
+}
+
+.auth-page, .setup-page { background: var(--page-bg); background-attachment: fixed; }
+
+/* ---------- 3. Glass surfaces ---------- */
+.entry-card,
+.stat-card,
+.chart-card,
+.history-card,
+.auth-card,
+.setup-card {
+  position: relative;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+/* thin specular line along the top edge */
+.entry-card::before,
+.stat-card::before,
+.chart-card::before,
+.history-card::before,
+.auth-card::before,
+.setup-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  pointer-events: none;
+  opacity: 0.8;
+}
+:root[data-theme="dark"] .entry-card::before,
+:root[data-theme="dark"] .stat-card::before,
+:root[data-theme="dark"] .chart-card::before,
+:root[data-theme="dark"] .history-card::before,
+:root[data-theme="dark"] .auth-card::before,
+:root[data-theme="dark"] .setup-card::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+}
+
+.entry-card.is-editing {
+  border-color: rgba(106, 125, 236, 0.7);
+  box-shadow: 0 0 0 3px rgba(106, 125, 236, 0.16), var(--glass-shadow);
+}
+
+/* top bar */
+.topbar {
+  background: rgba(255, 255, 255, 0.40);
+  border-bottom: 1px solid var(--glass-edge);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: 0 8px 30px rgba(41, 55, 120, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+}
+:root[data-theme="dark"] .topbar {
+  background: rgba(10, 16, 30, 0.45);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* small glass chips */
+.today-pill,
+.icon-button,
+.count-badge,
+.range-switcher,
+.edit-cancel-icon,
+.page-button {
+  border-color: var(--glass-edge-dim);
+  background: var(--glass-fill-soft);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  backdrop-filter: var(--glass-blur-light);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+:root[data-theme="dark"] .today-pill,
+:root[data-theme="dark"] .icon-button,
+:root[data-theme="dark"] .count-badge,
+:root[data-theme="dark"] .range-switcher,
+:root[data-theme="dark"] .edit-cancel-icon,
+:root[data-theme="dark"] .page-button {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.icon-button:hover { background: rgba(255, 255, 255, 0.55); }
+:root[data-theme="dark"] .icon-button:hover { background: rgba(255, 255, 255, 0.12); }
+
+.range-option.selected {
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 2px 8px rgba(41, 55, 120, 0.12), inset 0 1px 0 #fff;
+}
+:root[data-theme="dark"] .range-option.selected {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.user-avatar {
+  color: #566bd7;
+  border: 1px solid var(--glass-edge);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 #fff;
+}
+:root[data-theme="dark"] .user-avatar {
+  color: #b4bfff;
+  background: rgba(132, 149, 255, 0.18);
+}
+
+/* ---------- 4. Balance card: tinted glass instead of a flat gradient ---------- */
+.balance-card {
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: linear-gradient(135deg, rgba(76, 98, 214, 0.86) 0%, rgba(110, 128, 238, 0.70) 55%, rgba(140, 154, 246, 0.62) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  box-shadow:
+    0 22px 50px rgba(75, 96, 205, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+}
+:root[data-theme="dark"] .balance-card {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, rgba(79, 99, 220, 0.62) 0%, rgba(110, 100, 235, 0.46) 60%, rgba(140, 120, 245, 0.38) 100%);
+  box-shadow:
+    0 24px 56px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+.balance-icon,
+.balance-card-badge {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* auth preview card matches */
+.auth-preview {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: linear-gradient(140deg, rgba(76, 98, 214, 0.86), rgba(120, 136, 240, 0.66));
+  -webkit-backdrop-filter: blur(20px) saturate(165%);
+  backdrop-filter: blur(20px) saturate(165%);
+  box-shadow: 0 18px 44px rgba(71, 92, 198, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ---------- 5. Inputs: inset glass ---------- */
+.amount-input-wrap,
+.form-input,
+.history-date-filter select,
+.search-field,
+.auth-form input {
+  border: 1px solid var(--glass-edge-dim);
+  background: var(--glass-field);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  backdrop-filter: var(--glass-blur-light);
+  box-shadow: inset 0 2px 5px rgba(41, 55, 120, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+:root[data-theme="dark"] .amount-input-wrap,
+:root[data-theme="dark"] .form-input,
+:root[data-theme="dark"] .history-date-filter select,
+:root[data-theme="dark"] .search-field,
+:root[data-theme="dark"] .auth-form input {
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.amount-input-wrap:focus-within,
+.form-input:focus,
+.history-date-filter select:focus,
+.search-field:focus-within,
+.auth-form input:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 0 0 3px rgba(106, 125, 236, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+:root[data-theme="dark"] .amount-input-wrap:focus-within,
+:root[data-theme="dark"] .form-input:focus,
+:root[data-theme="dark"] .history-date-filter select:focus,
+:root[data-theme="dark"] .search-field:focus-within,
+:root[data-theme="dark"] .auth-form input:focus {
+  background: rgba(255, 255, 255, 0.10);
+}
+:root[data-theme="dark"] .amount-input::placeholder,
+:root[data-theme="dark"] .form-input::placeholder,
+:root[data-theme="dark"] .search-field input::placeholder,
+:root[data-theme="dark"] .auth-form input::placeholder { color: #6f7890; }
+:root[data-theme="dark"] .form-input { color: var(--text-soft); color-scheme: dark; }
+
+/* ---------- 6. Primary button: glossy glass ---------- */
+.submit-button {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: linear-gradient(180deg, rgba(120, 140, 245, 0.95), rgba(86, 109, 225, 0.92));
+  box-shadow:
+    0 8px 20px rgba(79, 101, 207, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+}
+.submit-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(132, 151, 248, 1), rgba(94, 117, 232, 0.98));
+  box-shadow:
+    0 12px 26px rgba(79, 101, 207, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- 7. Banners, tooltip, tables ---------- */
+.notice-banner {
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  backdrop-filter: var(--glass-blur-light);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.notice-banner.success { border-color: rgba(25, 154, 115, 0.30); }
+.notice-banner.error   { border-color: rgba(218, 99, 113, 0.32); }
+
+.chart-tooltip {
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 12px 32px rgba(41, 55, 120, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+:root[data-theme="dark"] .chart-tooltip {
+  background: rgba(20, 26, 44, 0.72);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+thead { background: rgba(255, 255, 255, 0.22); }
+:root[data-theme="dark"] thead { background: rgba(255, 255, 255, 0.04); }
+tbody tr:hover:not(.skeleton-row) { background: rgba(255, 255, 255, 0.38); }
+:root[data-theme="dark"] tbody tr:hover:not(.skeleton-row) { background: rgba(255, 255, 255, 0.06); }
+tbody tr.latest-row { background: rgba(100, 126, 238, 0.07); }
+.row-action.delete-action:hover:not(:disabled) { border-color: rgba(218, 99, 113, 0.35); }
+:root[data-theme="dark"] .note-empty { color: #5f6880; }
+:root[data-theme="dark"] .date-cell-dot { background: #4b5470; }
+
+/* ---------- 8. Stat icons: glass chips instead of flat pastels ---------- */
+.stat-icon,
+.entry-icon,
+.section-title-icon,
+.auth-card-icon,
+.setup-icon,
+.empty-chart-icon,
+.empty-history-icon {
+  border: 1px solid var(--glass-edge-dim);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.stat-icon.blue   { background: rgba(106, 125, 236, 0.16); }
+.stat-icon.green  { background: rgba(25, 154, 115, 0.16); }
+.stat-icon.amber  { background: rgba(224, 160, 50, 0.18); }
+.stat-icon.purple { background: rgba(152, 116, 213, 0.18); }
+.stat-icon.rose   { background: rgba(220, 113, 130, 0.16); }
+:root[data-theme="dark"] .stat-icon.blue   { background: rgba(132, 149, 255, 0.18); }
+:root[data-theme="dark"] .stat-icon.green  { background: rgba(87, 201, 155, 0.18); }
+:root[data-theme="dark"] .stat-icon.amber  { background: rgba(230, 185, 104, 0.18); }
+:root[data-theme="dark"] .stat-icon.purple { background: rgba(196, 160, 241, 0.18); }
+:root[data-theme="dark"] .stat-icon.rose   { background: rgba(240, 145, 160, 0.18); }
+.section-title-icon, .entry-icon, .auth-card-icon, .setup-icon { background: var(--accent-pale); }
+:root[data-theme="dark"] .section-title-icon,
+:root[data-theme="dark"] .auth-card-icon,
+:root[data-theme="dark"] .setup-icon { background: rgba(132, 149, 255, 0.18); border-color: rgba(255, 255, 255, 0.14); }
+.history-title-icon { background: rgba(25, 154, 115, 0.16); }
+:root[data-theme="dark"] .history-title-icon { background: rgba(87, 201, 155, 0.18); }
+
+/* skeleton shimmer reads better as glass */
+.skeleton { background: rgba(120, 135, 190, 0.16); }
+:root[data-theme="dark"] .skeleton { background: rgba(255, 255, 255, 0.07); }
+
+/* ---------- 9. Focus ring stays clearly visible on glass ---------- */
+button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible {
+  outline: 3px solid rgba(106, 125, 236, 0.55);
+  outline-offset: 2px;
+}
+
+/* ---------- 10. Performance on small screens ---------- */
+@media (max-width: 700px) {
+  :root { --glass-blur: blur(16px) saturate(155%); --glass-blur-light: blur(8px) saturate(140%); }
+  body::after { animation: none; filter: blur(20px); }
+}
+
+/* ---------- 11. Fallback when backdrop-filter is unsupported ---------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass-fill: rgba(255, 255, 255, 0.88);
+    --glass-field: rgba(255, 255, 255, 0.92);
+  }
+  :root[data-theme="dark"] {
+    --glass-fill: rgba(22, 28, 44, 0.94);
+    --glass-field: rgba(30, 37, 56, 0.95);
+  }
+  .topbar { background: rgba(255, 255, 255, 0.92); }
+  :root[data-theme="dark"] .topbar { background: rgba(12, 18, 32, 0.96); }
+}
+
+/* ---------- 12. Respect users who prefer less transparency / motion ---------- */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --glass-fill: rgba(255, 255, 255, 0.94); --glass-field: rgba(255, 255, 255, 0.96); }
+  :root[data-theme="dark"] { --glass-fill: rgba(22, 28, 44, 0.96); --glass-field: rgba(30, 37, 56, 0.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+}
