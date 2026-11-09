@@ -151,6 +151,9 @@ function App() {
   const [editing, setEditing] = useState<BalanceEntry | null>(null);
   const [draft, setDraft] = useState<BalanceDraft>(getDraft);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [darkMode, setDarkMode] = useState(
     () => window.localStorage.getItem("balance-theme") === "dark",
   );
@@ -263,6 +266,33 @@ function App() {
   const pageCount = Math.max(1, Math.ceil(matchingEntries.length / pageSize));
   const visiblePage = Math.min(page, pageCount);
   const visibleEntries = matchingEntries.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
+
+  async function submitAuth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || busy) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      const result =
+        authMode === "signup"
+          ? await supabase.auth.signUp({ email: authEmail, password: authPassword })
+          : await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+      if (result.error) throw result.error;
+      if (authMode === "signup" && !result.data.session) {
+        setNotice({
+          kind: "success",
+          message: "Account created. Check your email to confirm your address, then sign in.",
+        });
+        setAuthMode("signin");
+      } else {
+        setNotice({ kind: "success", message: "You're signed in. Your dashboard is ready." });
+      }
+    } catch (error) {
+      setNotice({ kind: "error", message: safeErrorMessage(error) });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function signInWithProvider(provider: "google" | "github") {
     if (!supabase || busy) return;
@@ -406,6 +436,13 @@ function App() {
   if (!user) {
     return (
       <AuthScreen
+        mode={authMode}
+        setMode={setAuthMode}
+        email={authEmail}
+        setEmail={setAuthEmail}
+        password={authPassword}
+        setPassword={setAuthPassword}
+        onSubmit={submitAuth}
         onOAuthSignIn={signInWithProvider}
         busy={busy}
         notice={notice}
@@ -978,12 +1015,26 @@ function SetupScreen() {
 }
 
 function AuthScreen({
+  mode,
+  setMode,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  onSubmit,
   onOAuthSignIn,
   busy,
   notice,
   darkMode,
   onToggleTheme,
 }: {
+  mode: "signin" | "signup";
+  setMode: (mode: "signin" | "signup") => void;
+  email: string;
+  setEmail: (email: string) => void;
+  password: string;
+  setPassword: (password: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onOAuthSignIn: (provider: "google" | "github") => void;
   busy: boolean;
   notice: Notice | null;
@@ -1022,12 +1073,54 @@ function AuthScreen({
         </section>
         <section className="auth-card">
           <div className="auth-card-heading">
-            <span className="auth-card-icon"><Wallet size={20} /></span>
+            <span className="auth-card-icon">{mode === "signin" ? <Wallet size={20} /> : <Sparkles size={20} />}</span>
             <div className="eyebrow">YOUR MONEY, IN PERSPECTIVE</div>
-            <h2>Welcome back</h2>
-            <p>Continue with a trusted provider and get straight to your dashboard.</p>
+            <h2>{mode === "signin" ? "Welcome back" : "Create your account"}</h2>
+            <p>{mode === "signin" ? "Sign in to pick up right where you left off." : "Create an account to start tracking your balance."}</p>
           </div>
           {notice && <NoticeBanner notice={notice} />}
+          <form className="auth-form password-auth-form" onSubmit={(event) => void onSubmit(event)}>
+            <label htmlFor="auth-email">Email address</label>
+            <input
+              id="auth-email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              disabled={busy}
+            />
+            <label htmlFor="auth-password">Password</label>
+            <input
+              id="auth-password"
+              type="password"
+              placeholder={mode === "signin" ? "Your password" : "At least 8 characters"}
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              minLength={8}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              disabled={busy}
+            />
+            <button type="submit" className="submit-button auth-submit" disabled={busy}>
+              {busy ? <LoaderCircle size={17} className="spin" /> : <ArrowRight size={17} />}
+              {busy ? "One moment..." : mode === "signin" ? "Sign in with email" : "Create account"}
+            </button>
+          </form>
+          <div className="auth-switch">
+            {mode === "signin" ? "New around here?" : "Already have an account?"}
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === "signin" ? "signup" : "signin");
+              }}
+              disabled={busy}
+            >
+              {mode === "signin" ? "Create an account" : "Sign in"} <ArrowRight size={13} />
+            </button>
+          </div>
+          <div className="auth-divider"><span>Or continue with</span></div>
           <div className="auth-form oauth-form">
             <button type="button" className="oauth-button google-button" onClick={() => onOAuthSignIn("google")} disabled={busy}>
               {busy ? <LoaderCircle size={17} className="spin" /> : <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.53 12.23c0-.7-.06-1.37-.18-2.01H12v3.8h5.39a4.62 4.62 0 0 1-2 3.04v2.52h3.24c1.9-1.75 2.99-4.33 2.99-7.35Z" /><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.44l-3.24-2.52c-.9.61-2.05.97-3.37.97-2.59 0-4.79-1.75-5.58-4.1H.95v2.6A10 10 0 0 0 12 22Z" /><path fill="#FBBC05" d="M6.42 19.93A6.04 6.04 0 0 1 6 16.7V14.1H2.8A10 10 0 0 0 2 12c0-1.62.39-3.15 1.08-4.5L6.42 10.1a6.02 6.02 0 0 1 0 9.83Z" /><path fill="#EA4335" d="M12 3.98c1.47 0 2.8.51 3.85 1.5l2.88-2.88A9.92 9.92 0 0 0 12 2a10 10 0 0 0-9.05 5.5L6.4 10.1A6.02 6.02 0 0 1 12 3.98Z" /></svg>}
@@ -1038,8 +1131,7 @@ function AuthScreen({
               Continue with GitHub
             </button>
           </div>
-          <div className="auth-divider"><span>Secure with Supabase OAuth</span></div>
-          <div className="auth-foot"><ShieldCheck size={13} /> Your account stays private and protected.</div>
+          <div className="auth-foot"><ShieldCheck size={13} /> Secured with Supabase authentication.</div>
         </section>
       </div>
       <div className="auth-page-footer"><span>Thoughtful money tracking, minus the noise.</span><span>Made for your peace of mind <span className="footer-spark">✳</span></span></div>
