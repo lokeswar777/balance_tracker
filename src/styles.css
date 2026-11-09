@@ -509,6 +509,59 @@ td { height: 48px; padding: 7px 15px; color: var(--text-soft); font-size: 10px; 
 .auth-form input { width: 100%; height: 39px; margin-bottom: 14px; padding: 0 11px; border: 1px solid var(--border-strong); border-radius: 9px; outline: 0; background: var(--card-bg); color: var(--text); font-size: 11px; transition: border-color 140ms, box-shadow 140ms; }
 .auth-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(106,125,236,.1); }
 .auth-form input::placeholder { color: #acb2c0; }
+.oauth-form { gap: 12px; }
+.oauth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.38);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+.oauth-button svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+.oauth-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(106, 125, 236, 0.45);
+  box-shadow: 0 8px 18px rgba(106, 125, 236, 0.08);
+}
+.oauth-button:disabled { cursor: not-allowed; opacity: .72; }
+.google-button { background: rgba(255, 255, 255, 0.5); }
+.github-button { background: rgba(17, 24, 39, 0.04); }
+:root[data-theme="dark"] .github-button { background: rgba(255, 255, 255, 0.04); }
+.auth-divider {
+  position: relative;
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 9px;
+  text-align: center;
+}
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--border);
+}
+.auth-divider span {
+  position: relative;
+  padding: 0 10px;
+  background: var(--card-bg);
+}
 .auth-submit { min-height: 40px; margin-top: 3px; }
 .auth-switch { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 17px; color: var(--text-muted); font-size: 10px; }
 .auth-switch button { display: inline-flex; align-items: center; gap: 4px; padding: 4px 2px; border: 0; background: transparent; color: var(--accent-dark); cursor: pointer; font-size: 10px; font-weight: 650; }

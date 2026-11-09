@@ -151,9 +151,6 @@ function App() {
   const [editing, setEditing] = useState<BalanceEntry | null>(null);
   const [draft, setDraft] = useState<BalanceDraft>(getDraft);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
   const [darkMode, setDarkMode] = useState(
     () => window.localStorage.getItem("balance-theme") === "dark",
   );
@@ -267,32 +264,24 @@ function App() {
   const visiblePage = Math.min(page, pageCount);
   const visibleEntries = matchingEntries.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
 
-  async function submitAuth(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function signInWithProvider(provider: "google" | "github") {
     if (!supabase || busy) return;
     setBusy(true);
     setNotice(null);
     try {
-      const result =
-        authMode === "signup"
-          ? await supabase.auth.signUp({ email: authEmail, password: authPassword })
-          : await supabase.auth.signInWithPassword({
-              email: authEmail,
-              password: authPassword,
-            });
-      if (result.error) throw result.error;
-      if (authMode === "signup" && !result.data.session) {
-        setNotice({
-          kind: "success",
-          message: "Account created. Check your email to confirm your address, then sign in.",
-        });
-        setAuthMode("signin");
-      } else {
-        setNotice({ kind: "success", message: "You're signed in. Your dashboard is ready." });
-      }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+      setNotice({
+        kind: "success",
+        message: `Redirecting to ${provider === "google" ? "Google" : "GitHub"} for sign in...`,
+      });
     } catch (error) {
       setNotice({ kind: "error", message: safeErrorMessage(error) });
-    } finally {
       setBusy(false);
     }
   }
@@ -417,13 +406,7 @@ function App() {
   if (!user) {
     return (
       <AuthScreen
-        mode={authMode}
-        setMode={setAuthMode}
-        email={authEmail}
-        setEmail={setAuthEmail}
-        password={authPassword}
-        setPassword={setAuthPassword}
-        onSubmit={submitAuth}
+        onOAuthSignIn={signInWithProvider}
         busy={busy}
         notice={notice}
         darkMode={darkMode}
@@ -995,25 +978,13 @@ function SetupScreen() {
 }
 
 function AuthScreen({
-  mode,
-  setMode,
-  email,
-  setEmail,
-  password,
-  setPassword,
-  onSubmit,
+  onOAuthSignIn,
   busy,
   notice,
   darkMode,
   onToggleTheme,
 }: {
-  mode: "signin" | "signup";
-  setMode: (mode: "signin" | "signup") => void;
-  email: string;
-  setEmail: (email: string) => void;
-  password: string;
-  setPassword: (password: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onOAuthSignIn: (provider: "google" | "github") => void;
   busy: boolean;
   notice: Notice | null;
   darkMode: boolean;
@@ -1051,29 +1022,24 @@ function AuthScreen({
         </section>
         <section className="auth-card">
           <div className="auth-card-heading">
-            <span className="auth-card-icon">{mode === "signin" ? <Wallet size={20} /> : <Sparkles size={20} />}</span>
+            <span className="auth-card-icon"><Wallet size={20} /></span>
             <div className="eyebrow">YOUR MONEY, IN PERSPECTIVE</div>
-            <h2>{mode === "signin" ? "Welcome back" : "A good place to start"}</h2>
-            <p>{mode === "signin" ? "Sign in to pick up right where you left off." : "Create your account. Your future self will thank you."}</p>
+            <h2>Welcome back</h2>
+            <p>Continue with a trusted provider and get straight to your dashboard.</p>
           </div>
           {notice && <NoticeBanner notice={notice} />}
-          <form className="auth-form" onSubmit={(event) => void onSubmit(event)}>
-            <label htmlFor="auth-email">Email address</label>
-            <input id="auth-email" type="email" placeholder="you@example.com" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required disabled={busy} />
-            <label htmlFor="auth-password">Password</label>
-            <input id="auth-password" type="password" placeholder="At least 8 characters" autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required disabled={busy} />
-            <button type="submit" className="submit-button auth-submit" disabled={busy}>
-              {busy ? <LoaderCircle size={17} className="spin" /> : <ArrowRight size={17} />}
-              {busy ? "One moment..." : mode === "signin" ? "Sign in to your account" : "Create your account"}
+          <div className="auth-form oauth-form">
+            <button type="button" className="oauth-button google-button" onClick={() => onOAuthSignIn("google")} disabled={busy}>
+              {busy ? <LoaderCircle size={17} className="spin" /> : <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.53 12.23c0-.7-.06-1.37-.18-2.01H12v3.8h5.39a4.62 4.62 0 0 1-2 3.04v2.52h3.24c1.9-1.75 2.99-4.33 2.99-7.35Z" /><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.44l-3.24-2.52c-.9.61-2.05.97-3.37.97-2.59 0-4.79-1.75-5.58-4.1H.95v2.6A10 10 0 0 0 12 22Z" /><path fill="#FBBC05" d="M6.42 19.93A6.04 6.04 0 0 1 6 16.7V14.1H2.8A10 10 0 0 0 2 12c0-1.62.39-3.15 1.08-4.5L6.42 10.1a6.02 6.02 0 0 1 0 9.83Z" /><path fill="#EA4335" d="M12 3.98c1.47 0 2.8.51 3.85 1.5l2.88-2.88A9.92 9.92 0 0 0 12 2a10 10 0 0 0-9.05 5.5L6.4 10.1A6.02 6.02 0 0 1 12 3.98Z" /></svg>}
+              Continue with Google
             </button>
-          </form>
-          <div className="auth-switch">
-            {mode === "signin" ? "New around here?" : "Already have an account?"}
-            <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")}>
-              {mode === "signin" ? "Create an account" : "Sign in"} <ArrowRight size={13} />
+            <button type="button" className="oauth-button github-button" onClick={() => onOAuthSignIn("github")} disabled={busy}>
+              {busy ? <LoaderCircle size={17} className="spin" /> : <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a12 12 0 0 0-3.79 23.38c.6.11.82-.26.82-.57v-2.02c-3.34.73-4.04-1.6-4.04-1.6-.54-1.38-1.31-1.75-1.31-1.75-1.08-.74.08-.73.08-.73 1.2.09 1.83 1.25 1.83 1.25 1.06 1.82 2.78 1.3 3.46.99.11-.78.42-1.3.75-1.6-2.66-.3-5.46-1.33-5.46-5.9 0-1.3.46-2.37 1.22-3.2-.12-.3-.53-1.52.12-3.16 0 0 1-.32 3.3 1.23a11.31 11.31 0 0 1 6 0c2.29-1.55 3.29-1.23 3.29-1.23.66 1.64.25 2.87.12 3.16.76.83 1.22 1.9 1.22 3.2 0 4.58-2.8 5.6-5.47 5.9.43.37.81 1.1.81 2.22v3.29c0 .31.21.68.83.56A12 12 0 0 0 12 .8Z"/></svg>}
+              Continue with GitHub
             </button>
           </div>
-          <div className="auth-foot"><ShieldCheck size={13} /> Secured with Supabase authentication</div>
+          <div className="auth-divider"><span>Secure with Supabase OAuth</span></div>
+          <div className="auth-foot"><ShieldCheck size={13} /> Your account stays private and protected.</div>
         </section>
       </div>
       <div className="auth-page-footer"><span>Thoughtful money tracking, minus the noise.</span><span>Made for your peace of mind <span className="footer-spark">✳</span></span></div>
